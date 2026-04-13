@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Search Home</title>
+    <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <span class="brand">STX</span>
+                <button id="closeSidebar" class="icon-button" aria-label="Collapse menu">×</button>
+            </div>
+
+            <nav class="nav-links">
+                <a href="/" class="nav-link active">Home</a>
+                <a href="#" class="nav-link disabled">Search</a>
+                <a href="#" class="nav-link disabled">Portfolio</a>
+                <a href="#" class="nav-link disabled">Watchlist</a>
+                <a href="#" class="nav-link disabled">History</a>
+                <a href="#" class="nav-link disabled">Settings</a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <p>Minimal starter layout for a JDBC-backed stock app.</p>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <button id="openSidebar" class="icon-button" aria-label="Open menu">☰</button>
+                <div class="topbar-title">Stock Search</div>
+            </header>
+
+            <section class="hero">
+                <div class="hero-content">
+                    <p class="eyebrow">Clean. Fast. Expandable.</p>
+                    <h1>Search stock prices.</h1>
+                    <p class="subtitle">
+                        Start with a symbol or company name. Later, you can wire this to Alpaca and persist
+                        search history, watchlists, and orders through JDBC.
+                    </p>
+
+                    <form class="search-form" action="/search.html" method="get">
+                        <label class="sr-only" for="stockQuery">Search stocks</label>
+                        <input
+                            id="stockQuery"
+                            name="q"
+                            type="text"
+                            placeholder="Try AAPL, NVDA, TSLA, Apple..."
+                            autocomplete="off"
+                            required
+                        >
+                        <button type="submit">Search</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

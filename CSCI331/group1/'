@@ -1,0 +1,216 @@
+Use Northwinds2024Student;
+
+-- Inspecting the qualified names needed to query every table.
+select
+  s.schema_id as schema_id,
+  s.name as schema_name,
+  t.name as table_name,
+  concat(s.name,'.',t.name) as qualified_name
+from
+  sys.schemas s
+join
+  sys.tables t
+on
+  s.schema_id = t.schema_id
+GO
+
+-- (1): Return orders placed in June 2015
+-- shouldn't return anything, I don't think the table has orders for 2015.
+select
+  OrderId,
+  OrderDate,
+  CustomerId,
+  EmployeeId
+from
+  Sales.[Order]
+where
+  month(OrderDate) = 6
+    and
+  year(OrderDate) = 2015    
+GO
+
+-- Return orders placed in June 2021.
+-- avoiding using functions like month() and year() in order to make it sargeable
+select
+  OrderId,
+  OrderDate,
+  CustomerId,
+  EmployeeId
+from
+  Sales.[Order]
+where
+  OrderDate >= '20210601'
+    and
+  OrderDate < '20210701'
+order by
+  OrderDate
+GO
+
+-- (2) Return orders placed on the last day of the month.
+-- don't think this query is sargeable.
+select
+  OrderId,
+  OrderDate,
+  CustomerId,
+  EmployeeId
+from
+  Sales.[Order]
+where
+  OrderDate = EOMONTH(OrderDate)
+order by
+  OrderDate
+GO
+
+-- (3) return employees with last name containing the letter 'e' at least 2 times.
+select
+  EmployeeId,
+  EmployeeFirstName,
+  EmployeeLastName
+from
+  HumanResources.Employee
+where
+  (
+    len(EmployeeLastName) 
+      - 
+    len(replace(EmployeeLastName, 'e', ''))
+  ) 
+  >= 2  
+order by
+  EmployeeId
+GO
+
+-- (4) Return Orders with total value(qty*unitprice) greater than 10000
+-- sorted by total value
+select
+  OrderId,
+  Quantity * UnitPrice as TotalValue
+from
+  Sales.[OrderDetail]
+where
+  Quantity * UnitPrice > 10000
+order by
+  TotalValue
+GO
+
+-- (5) Write a query agaisnt the HR.Employees table that returns employees
+-- with a last name that starts with a lower case letter.
+
+-- grab a list of supported collations.
+/*
+select 
+  name,
+  description
+from
+  sys.fn_helpcollations();
+*/
+
+select
+  EmployeeId,
+  EmployeeLastName
+from
+  HumanResources.Employee
+where
+  EmployeeLastName COLLATE Latin1_General_CS_AS like '[abcdefghijklmnopqrstuvwxyz]%'
+GO
+
+select
+  EmployeeId,
+  EmployeeLastName
+from
+  HumanResources.Employee
+where
+  EmployeeLastName COLLATE Latin1_General_CS_AS like '[a-z]%'
+GO
+
+-- (6) Explain the difference between the following two queries
+-- 6.1
+/*
+ * SQL processes clauses in the following order:
+ *  from > where > group by > having > select > order by
+ * the first query asks
+ *  'how many orders has each employee placed before 'date'?' 
+ */
+select
+  EmployeeId,
+  count(*) as numorders
+from
+  Sales.[Order]
+where 
+  orderdate < '20300101'
+group by 
+  EmployeeId;
+GO
+
+-- 6.2
+/*
+ * This query first groups rows by employees.
+ * for each employee, it asks if the most recent order occured before 'date'
+ */
+select
+  EmployeeId,
+  Count(*) as numorders
+From
+  Sales.[Order]
+group by 
+  EmployeeId
+having
+  max(orderdate) < '20300101';
+go
+-- (7) Return the three ship countries with the highest average freight for orders placed in 2015.  
+select
+  top(3)
+  ShipToCountry,
+  avg(Freight) as AvgFreight
+from
+  Sales.[Order]
+where
+  OrderDate < '20160101'
+    and
+  OrderDate >= '20150101'
+group by
+  ShipToCountry
+order by
+  AvgFreight desc;
+go
+
+-- (8) calculate row numbers for orders based on order date ordering
+-- (using order id as the tiebreaker)
+-- for each customer separately
+select
+  top(2)
+  CustomerId,
+  OrderDate,
+  OrderId,
+  row_number() over (partition by CustomerId order by OrderDate, OrderId)
+from
+  Sales.[Order]
+GO
+
+-- (9) Figure out and return for each employee the gender based on
+-- the title of courtesy: 
+--  {Ms., Mrs.} = female, 
+--  {Mr.} = Male, 
+--  {Dr.} - Unknown
+select
+  EmployeeId,
+  EmployeeFirstName,
+  EmployeeLastName,
+  EmployeeTitleOfCourtesy,
+  Case
+    when EmployeeTitleOfCourtesy in ('Ms.', 'Mrs.') then 'Female'
+    when EmployeeTitleOfCourtesy in ('Mr.') then 'Male'
+    when EmployeeTitleOfCourtesy in ('Dr.') then 'Unknown'
+  end as gender
+from
+  HumanResources.Employee
+order by
+  EmployeeId
+GO
+
+-- (10) Return for each customer the customer ID and region
+-- sort the rows in the output by region
+-- having nulls sort last (after non-NULL values)
+-- note that the default in T-SQL is that NULLs sort first
+select
+  CustomerId,
+
